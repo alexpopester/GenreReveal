@@ -1,0 +1,6 @@
+- create a build directory
+- "cmake .."
+- make
+- copy the csv data file to the build folder
+- run "./GenreReveal [number of threads]"
+

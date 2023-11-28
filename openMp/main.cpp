@@ -13,9 +13,12 @@ parsing a different dataset.
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <chrono>
+
 #include "csv.hpp"
 
 using namespace std;
+using namespace std::chrono;
 
 struct Point {
   double x, y, z; // coordinates
@@ -58,14 +61,14 @@ void kMeansClustering(int epochs, int k, std::string category1,
   vector<Point>::iterator it;
   vector<Point>::iterator c;
   int i;
+  auto start = high_resolution_clock::now();
+  for (i = 0; i < k; ++i) {
+    centroids.push_back(points.at(rand() % points.size()));
+  }
 #pragma omp parallel num_threads(thread_count) \
         default(none) shared(k,points,epochs, centroids, sumX, sumY, sumZ, nPoints) \
           private(it, clusterId, c,epoch, i)
   {
-#pragma omp for
-  for (i = 0; i < k; ++i) {
-    centroids.push_back(points.at(rand() % points.size()));
-  }
 
   for (c = begin(centroids); c != end(centroids); ++c) {
     // quick hack to get cluster index
@@ -83,10 +86,10 @@ void kMeansClustering(int epochs, int k, std::string category1,
       *it = p;
     }
   }
-
+}
 
   // Initialize with zeroes
-#pragma omp for
+  //
   for (int j = 0; j < k; ++j) {
     nPoints.push_back(0);
     sumX.push_back(0.0);
@@ -95,8 +98,11 @@ void kMeansClustering(int epochs, int k, std::string category1,
   }
 
       // Iterate over points to append data to centroids
+#pragma omp parallel num_threads(thread_count) \
+        default(none) shared(k,points,epochs, centroids, sumX, sumY, sumZ, nPoints) \
+          private(it, clusterId, c,epoch, i)
+          {      
       for (epoch = 0; epoch < epochs; epoch++){
-      
         #pragma omp for 
         for (it = points.begin(); it != points.end(); ++it) {
           clusterId = it->cluster;
@@ -117,7 +123,11 @@ void kMeansClustering(int epochs, int k, std::string category1,
           c->z = sumZ[clusterId] / nPoints[clusterId];
         }
       }
-    }
+      }
+  auto stop = high_resolution_clock::now();
+  auto duration = duration_cast<microseconds>(stop - start);
+  printf("Program took %d ms to complete\n", duration.count());
+    
   ofstream myfile;
   myfile.open("tracks_output.csv");
   myfile << category1 << "," << category2 << "," << category3 << ",c" << endl;

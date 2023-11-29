@@ -16,9 +16,19 @@ parsing a different dataset.
 #include <chrono>
 
 #include "csv.hpp"
+#include <time.h>
+#include <sys/time.h>
 
 using namespace std;
-using namespace std::chrono;
+
+double get_wall_time(){
+    struct timeval time;
+    if (gettimeofday(&time,NULL)){
+        //  Handle error
+        return 0;
+    }
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
 
 struct Point {
   double x, y, z; // coordinates
@@ -49,7 +59,10 @@ vector<Point> readcsv(std::string cat1, std::string cat2, std::string cat3) {
 
 void kMeansClustering(int epochs, int k, std::string category1,
                       std::string category2, std::string category3, int thread_count) {
+  double wallStart = get_wall_time();
   vector<Point> points = readcsv(category1, category2, category3); // read from file
+  double wallEnd = get_wall_time();
+  printf("Program took %f s to load data\n", (wallEnd - wallStart));
 
   vector<Point> centroids;
   srand(time(0)); // need to set the random seed
@@ -61,7 +74,7 @@ void kMeansClustering(int epochs, int k, std::string category1,
   vector<Point>::iterator it;
   vector<Point>::iterator c;
   int i;
-  auto start = high_resolution_clock::now();
+  wallStart = get_wall_time();
   for (i = 0; i < k; ++i) {
     centroids.push_back(points.at(rand() % points.size()));
   }
@@ -124,10 +137,10 @@ void kMeansClustering(int epochs, int k, std::string category1,
         }
       }
       }
-  auto stop = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(stop - start);
-  printf("Program took %d ms to complete\n", duration.count());
+  wallEnd = get_wall_time();
+  printf("Program took %f s to compute\n", (wallEnd - wallStart));
     
+  wallStart = get_wall_time();
   ofstream myfile;
   myfile.open("tracks_output.csv");
   myfile << category1 << "," << category2 << "," << category3 << ",c" << endl;
@@ -137,6 +150,8 @@ void kMeansClustering(int epochs, int k, std::string category1,
            << endl;
   }
   myfile.close();
+  wallEnd = get_wall_time();
+  printf("Program took %f s to write data\n", (wallEnd - wallStart));
 }
 
 int main(int argv, char *argc[]) {

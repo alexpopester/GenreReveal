@@ -79,8 +79,8 @@ void kMeansClustering(int epochs, int k, std::string category1,
     centroids.push_back(points.at(rand() % points.size()));
   }
 #pragma omp parallel num_threads(thread_count) \
-        default(none) shared(k,points,epochs, centroids, sumX, sumY, sumZ, nPoints) \
-          private(it, clusterId, c,epoch, i)
+        default(none) shared(points, centroids) \
+          private(it, clusterId, c)
   {
 
   for (c = begin(centroids); c != end(centroids); ++c) {
@@ -112,8 +112,8 @@ void kMeansClustering(int epochs, int k, std::string category1,
 
       // Iterate over points to append data to centroids
 #pragma omp parallel num_threads(thread_count) \
-        default(none) shared(k,points,epochs, centroids, sumX, sumY, sumZ, nPoints) \
-          private(it, clusterId, c,epoch, i)
+        default(none) shared(points,epochs, centroids, sumX, sumY, sumZ, nPoints) \
+          private(it, clusterId, c,epoch)
           {      
       for (epoch = 0; epoch < epochs; epoch++){
         #pragma omp for 
